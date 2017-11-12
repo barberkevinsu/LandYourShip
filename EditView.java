@@ -15,19 +15,15 @@ public class EditView extends JPanel implements Observer {
 
     //interface parts
     private GameModel model;
-    //landing pad coordinate and width and height
-    int landing_pad_x;
-    int landing_pad_y;
-    int landing_pad_w;
-    int landing_pad_h;
-    //coordinates of 20 peaks + left bottom corner + right bottom corner
-    int[] peak_xPoints;
-    int[] peak_yPoints;
 
     /***********************************************/
 
     protected void paintComponent(Graphics g) {
         super.paintComponent(g);
+        Point2d landing_pad_coord = model.getPadCoord();
+        Point2d landing_pad_size = model.getPadSize();
+        int[] peak_xPoints = model.getPeakXPoints();
+        int[] peak_yPoints = model.getPeakYPoints();
 
         //draw polygon
         g.setColor(Color.GRAY);
@@ -41,39 +37,13 @@ public class EditView extends JPanel implements Observer {
 
         //draw landing pad
         g.setColor(Color.RED);
-        g.drawRect(landing_pad_x, landing_pad_y, landing_pad_w, landing_pad_h);
-        g.fillRect(landing_pad_x, landing_pad_y, landing_pad_w, landing_pad_h);
+        g.drawRect((int)landing_pad_coord.x, (int)landing_pad_coord.y, (int)landing_pad_size.x, (int)landing_pad_size.y);
+        g.fillRect((int)landing_pad_coord.x, (int)landing_pad_coord.y, (int)landing_pad_size.x, (int)landing_pad_size.y);
     }
 
     public EditView(GameModel model) {
         this.model = model;
         model.addObserver(this);
-
-        //set rectangle x, y, w, h
-        landing_pad_x = 330;
-        landing_pad_y = 100;
-        landing_pad_w = 40;
-        landing_pad_h = 10;
-
-        //randomly set peaks
-        Rectangle2D myWorld = model.getWorldBounds();
-        int range_max = (int)(myWorld.getHeight());
-        int range_min = (int)(myWorld.getHeight()/2);
-        peak_xPoints = new int[22];//include left bottom corner and right bottom corner
-        peak_yPoints = new int[22];//to draw polygon
-        peak_xPoints[0] = 0;
-        peak_yPoints[0] = (int)myWorld.getHeight();
-        for(int i=1; i<21; i++){
-          Random rand = new Random();
-          //get y for peak(i)
-          int peak_y = rand.nextInt((range_max - range_min) + 1) + range_min;
-          //get x for peak(i)
-          int peak_x = (int)((i-1) * (myWorld.getWidth()/19));
-          peak_xPoints[i] = peak_x;
-          peak_yPoints[i] = peak_y;
-        }
-        peak_xPoints[21] = (int)myWorld.getWidth();
-        peak_yPoints[21] = (int)myWorld.getHeight();
 
         // want the background to be grey
         setBackground(Color.LIGHT_GRAY);
@@ -101,11 +71,8 @@ public class EditView extends JPanel implements Observer {
             public void mouseClicked(MouseEvent e) {
               if(e.getClickCount() == 2){
                   System.out.println(e.getX());
-                  landing_pad_x = e.getX() - 40/2;
-                  landing_pad_y = e.getY() - 10/2;
-                  model.setLandingPadCoord(landing_pad_x, landing_pad_y);
+                  model.setLandingPadCoord(e.getX() - (int)(model.getPadSize().x/2), e.getY() - (int)(model.getPadSize().y/2));
                   model.updateViews();
-                  repaint();
               }
             }
 
@@ -114,26 +81,28 @@ public class EditView extends JPanel implements Observer {
             public void mousePressed(MouseEvent e) {
               boolean hitpad = false;//used for avoid circle and pad move together
               //if I pressed on the landing pad
-              if(in_landingpad(e.getX(), e.getY())){
+              if(model.in_landingpad(e.getX(), e.getY())){
                 hitpad = true;
-                pad_startDragging.x = e.getX();
-                pad_startDragging.y = e.getY();
+                //remember where it started to drag
+                pad_startDragging.x = model.getPadCoord().x;
+                pad_startDragging.y = model.getPadCoord().y;
                 //use a offset vector to remember the relative distance between
                 //mouse press position and landing pad coordination
-                pad_offset.x = e.getX() - landing_pad_x;
-                pad_offset.y = e.getY() - landing_pad_y;
+                pad_offset.x = e.getX() - model.getPadCoord().x;
+                pad_offset.y = e.getY() - model.getPadCoord().y;
               }else{
                 pad_startDragging.x = -1;
                 pad_startDragging.y = -1;
               }
 
               //if I pressed on one of the peaks
-              int index_for_peak = in_which_peak(e.getX(), e.getY());
+              int index_for_peak = model.in_which_peak(e.getX(), e.getY());
               if (index_for_peak != -1 && !hitpad) {
+                //remember where it started to drag
                 peak_startDragging.x = index_for_peak;
-                peak_startDragging.y = e.getY();
+                peak_startDragging.y = model.getPeakValue(index_for_peak);
                 peak_offset.x = index_for_peak;
-                peak_offset.y = e.getY() - peak_yPoints[index_for_peak];
+                peak_offset.y = e.getY() - model.getPeakValue(index_for_peak);
               }else{  //-1 means I did not pressed on any of peaks
                 peak_startDragging.x = -1;
                 peak_startDragging.y = -1;
@@ -151,8 +120,11 @@ public class EditView extends JPanel implements Observer {
                   pad_stopDragging.x = e.getX() - pad_offset.x;
                   pad_stopDragging.y = e.getY() - pad_offset.y;
                   System.out.println("this is a success pad drag");
-                  pad_moved_offset.x = pad_stopDragging.x - pad_startDragging.x;
-                  pad_moved_offset.y = pad_stopDragging.y - pad_startDragging.y;
+                  //set change in x and y, then set undoable
+                  int change_in_x = (int)(pad_stopDragging.x - pad_startDragging.x);
+                  int change_in_y = (int)(pad_stopDragging.y - pad_startDragging.y);
+                  model.setPadUndoable(change_in_x, change_in_y);
+                  //only set undoable when there is a "real drag"
                 }
               }else{
                 pad_stopDragging.x = -1;
@@ -165,15 +137,19 @@ public class EditView extends JPanel implements Observer {
               if(peak_startDragging.x >= 0){
                 //if I did drag
                 if(e.getY() != peak_startDragging.y){
-                  peak_stopDragging.y = e.getY();
+                  peak_stopDragging.y = e.getY() - peak_offset.y;
                   System.out.println("this is a success peak drag");
-                  peak_moved_offset.y = peak_stopDragging.y - peak_startDragging.y;
+                  //set change in y, then set undoable
+                  int change_in_y = (int)(peak_stopDragging.y - peak_startDragging.y);
+                  model.setPeakUndoable((int)peak_offset.x, change_in_y);
                 }
               }else{
                 peak_stopDragging.x = -1;
                 peak_stopDragging.y = -1;
                 System.out.println("Not a peak drag");
               }
+
+              model.updateViews();
             }
 
         });
@@ -185,23 +161,20 @@ public class EditView extends JPanel implements Observer {
               if(pad_startDragging.x >= 0 && pad_startDragging.y >= 0){
                 int potential_x = e.getX() - (int)pad_offset.x;
                 int potential_y = e.getY() - (int)pad_offset.y;
-                if(!model.outside_the_world(potential_x, potential_y, landing_pad_w, landing_pad_h)){
-                  landing_pad_x = potential_x;
-                  landing_pad_y = potential_y;
-                  model.setLandingPadCoord(landing_pad_x, landing_pad_y);
+                if(!model.outside_the_world(potential_x, potential_y, (int)model.landing_pad_size.x, (int)model.landing_pad_size.y)){
+                  model.setLandingPadCoord(potential_x, potential_y);
                   model.updateViews();
-                  repaint();
                 }else{
                   System.out.println("boom!");
                 }
               }
 
               if(peak_startDragging.x >= 0){
+                int potential_x = (int)peak_offset.x;
                 int potential_y = e.getY() - (int)peak_offset.y;
                 if(model.outside_the_world(0, potential_y, 0, 0) == false){
-                  peak_yPoints[(int)peak_startDragging.x] = potential_y;
+                  model.setPeakValue(potential_x, potential_y);
                   model.updateViews();
-                  repaint();
                 }
               }
             }
@@ -211,43 +184,7 @@ public class EditView extends JPanel implements Observer {
 
     @Override
     public void update(Observable o, Object arg) {
-
-    }
-    //hittest for landding pad
-    public boolean in_landingpad(double x, double y){
-      if(x >= landing_pad_x && x <= landing_pad_x + landing_pad_w){
-        if(y >= landing_pad_y && y <= landing_pad_y + landing_pad_h){
-          return true;
-        }
-      }
-      return false;
+      repaint();
     }
 
-    //hittest for peaks. -1 for miss, otherwise return index
-    public int in_which_peak(int x, int y){
-      //estimate which peak according to x, avoid O(n)
-      double i = x / (model.getWorldBounds().getWidth() / 19);
-      int lower_i = (int)(Math.floor(i));
-      int upper_i = (int)(Math.ceil(i));
-      int lower_x = peak_xPoints[lower_i + 1];//+1 because bottom left corner point is in [0]
-      int lower_y = peak_yPoints[lower_i + 1];
-      int upper_x = peak_xPoints[upper_i + 1];
-      int upper_y = peak_yPoints[upper_i + 1];
-
-      if(x <= lower_x + 15){
-        if(y <= lower_y + 15 && y >= lower_y - 15){
-          return lower_i + 1;
-        }else{
-          return -1;
-        }
-      }else if(x >= upper_x - 15){
-        if(y <= upper_y + 15 && y >= upper_y - 15){
-          return upper_i + 1;
-        }else{
-          return -1;
-        }
-      }else{
-        return -1;
-      }
-    }
 }
