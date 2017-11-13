@@ -6,7 +6,6 @@ import java.util.Observable;
 import java.util.Observer;
 //added import
 import javax.vecmath.*;
-import java.util.ArrayList;
 import java.util.Random;
 import java.lang.Math;
 
@@ -26,7 +25,7 @@ public class EditView extends JPanel implements Observer {
         int[] peak_yPoints = model.getPeakYPoints();
 
         //draw polygon
-        g.setColor(Color.GRAY);
+        g.setColor(Color.DARK_GRAY);
         g.fillPolygon(peak_xPoints, peak_yPoints, 22);
 
         //draw each circle
@@ -71,8 +70,13 @@ public class EditView extends JPanel implements Observer {
             public void mouseClicked(MouseEvent e) {
               if(e.getClickCount() == 2){
                   System.out.println(e.getX());
-                  model.setLandingPadCoord(e.getX() - (int)(model.getPadSize().x/2), e.getY() - (int)(model.getPadSize().y/2));
-                  model.updateViews();
+                  int potential_x = e.getX() - (int)(model.getPadSize().x/2);
+                  int potential_y = e.getY() - (int)(model.getPadSize().y/2);
+                  int old_x = (int)model.getPadCoord().x;
+                  int old_y = (int)model.getPadCoord().y;
+                  model.setLandingPadCoord(potential_x, potential_y);
+                  model.setPadUndoable(potential_x - old_x, potential_y - old_y);
+                  model.setChangedAndNotify();
               }
             }
 
@@ -125,6 +129,10 @@ public class EditView extends JPanel implements Observer {
                   int change_in_y = (int)(pad_stopDragging.y - pad_startDragging.y);
                   model.setPadUndoable(change_in_x, change_in_y);
                   //only set undoable when there is a "real drag"
+                }else{
+                  pad_stopDragging.x = -1;
+                  pad_stopDragging.y = -1;
+                  System.out.println("Not a pad drag");
                 }
               }else{
                 pad_stopDragging.x = -1;
@@ -149,7 +157,7 @@ public class EditView extends JPanel implements Observer {
                 System.out.println("Not a peak drag");
               }
 
-              model.updateViews();
+              model.setChangedAndNotify();
             }
 
         });
@@ -163,7 +171,7 @@ public class EditView extends JPanel implements Observer {
                 int potential_y = e.getY() - (int)pad_offset.y;
                 if(!model.outside_the_world(potential_x, potential_y, (int)model.landing_pad_size.x, (int)model.landing_pad_size.y)){
                   model.setLandingPadCoord(potential_x, potential_y);
-                  model.updateViews();
+                  model.setChangedAndNotify();
                 }else{
                   System.out.println("boom!");
                 }
@@ -174,7 +182,7 @@ public class EditView extends JPanel implements Observer {
                 int potential_y = e.getY() - (int)peak_offset.y;
                 if(model.outside_the_world(0, potential_y, 0, 0) == false){
                   model.setPeakValue(potential_x, potential_y);
-                  model.updateViews();
+                  model.setChangedAndNotify();
                 }
               }
             }

@@ -15,6 +15,7 @@ public class GameModel extends Observable {
     Point2d landing_pad_coord;
     Point2d landing_pad_size;
     //coordinates of 20 peaks + left bottom corner + right bottom corner
+    int peaks;
     int[] peak_xPoints;
     int[] peak_yPoints;
     //my undo manager
@@ -22,11 +23,17 @@ public class GameModel extends Observable {
 
     // Ship
     public Ship ship;
+    //ship size
+    int ship_width;
+    int ship_height;
 
 
     public GameModel(int fps, int width, int height, int peaks) {
 
         ship = new Ship(60, width/2, 50);
+
+        ship_width = 10;
+        ship_height = 10;
 
         worldBounds = new Rectangle2D.Double(0, 0, width, height);
 
@@ -44,30 +51,31 @@ public class GameModel extends Observable {
 
 
         //randomly set peaks
+        this.peaks = peaks;
         int range_max = (int)(worldBounds.getHeight());
         int range_min = (int)(worldBounds.getHeight()/2);
-        peak_xPoints = new int[22];//include left bottom corner and right bottom corner
-        peak_yPoints = new int[22];//to draw polygon
+        peak_xPoints = new int[peaks + 2];//include left bottom corner and right bottom corner
+        peak_yPoints = new int[peaks + 2];//to draw polygon
         peak_xPoints[0] = 0;
         peak_yPoints[0] = (int)worldBounds.getHeight();
-        for(int i=1; i<21; i++){
+        for(int i=1; i<peaks + 1; i++){
           Random rand = new Random();
           //get y for peak(i)
           int peak_y = rand.nextInt((range_max - range_min) + 1) + range_min;
           //get x for peak(i)
-          int peak_x = (int)((i-1) * (worldBounds.getWidth()/19));
+          int peak_x = (int)((i-1) * (worldBounds.getWidth()/(peaks - 1)));
           peak_xPoints[i] = peak_x;
           peak_yPoints[i] = peak_y;
         }
-        peak_xPoints[21] = (int)worldBounds.getWidth();
-        peak_yPoints[21] = (int)worldBounds.getHeight();
+        peak_xPoints[peaks + 1] = (int)worldBounds.getWidth();
+        peak_yPoints[peaks + 1] = (int)worldBounds.getHeight();
 
 
         // anonymous class to monitor ship updates
         ship.addObserver(new Observer() {
             @Override
             public void update(Observable o, Object arg) {
-                updateViews();
+                setChangedAndNotify();
             }
         });
     }
@@ -102,7 +110,7 @@ public class GameModel extends Observable {
     }
 
     //update views
-    public void updateViews() {
+    public void setChangedAndNotify() {
       setChanged();
       notifyObservers();
     }
@@ -142,7 +150,7 @@ public class GameModel extends Observable {
     //hittest for peaks. -1 for miss, otherwise return index
     public int in_which_peak(int x, int y){
       //estimate which peak according to x, avoid O(n)
-      double i = x / (this.getWorldBounds().getWidth() / 19);
+      double i = x / (this.getWorldBounds().getWidth() / (peaks - 1));
       int lower_i = (int)(Math.floor(i));
       int upper_i = (int)(Math.ceil(i));
       int lower_x = peak_xPoints[lower_i + 1];//+1 because bottom left corner point is in [0]
@@ -177,7 +185,7 @@ public class GameModel extends Observable {
   				super.redo();
   				landing_pad_coord.x += change_in_x;
           landing_pad_coord.y += change_in_y;
-          updateViews();
+          setChangedAndNotify();
   				System.out.println("Pad: redo value");
   			}
 
@@ -185,7 +193,7 @@ public class GameModel extends Observable {
   				super.undo();
           landing_pad_coord.x -= change_in_x;
           landing_pad_coord.y -= change_in_y;
-          updateViews();
+          setChangedAndNotify();
   				System.out.println("Pad: undo value");
   			}
   		};
@@ -204,14 +212,14 @@ public class GameModel extends Observable {
         public void redo() throws CannotRedoException {
           super.redo();
           peak_yPoints[index] += change_in_y;
-          updateViews();
+          setChangedAndNotify();
           System.out.println("Peak: redo value");
         }
 
         public void undo() throws CannotUndoException {
           super.undo();
           peak_yPoints[index] -= change_in_y;
-          updateViews();
+          setChangedAndNotify();
           System.out.println("Peak: undo value");
         }
       };
@@ -229,7 +237,7 @@ public class GameModel extends Observable {
       }else{
         System.out.println("cannot undo");
       }
-      updateViews();
+      setChangedAndNotify();
   	}
 
   	public void redo() {
@@ -238,7 +246,7 @@ public class GameModel extends Observable {
       }else{
         System.out.println("cannot redo");
       }
-      updateViews();
+      setChangedAndNotify();
   	}
 
   	public boolean canUndo() {
