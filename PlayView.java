@@ -56,6 +56,7 @@ public class PlayView extends JPanel implements Observer {
         setBackground(Color.LIGHT_GRAY);
         this.model = model;
         model.addObserver(this);
+        model.ship.addObserver(this);
 
         this.addKeyListener(new KeyListener() {
 

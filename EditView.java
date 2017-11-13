@@ -43,6 +43,7 @@ public class EditView extends JPanel implements Observer {
     public EditView(GameModel model) {
         this.model = model;
         model.addObserver(this);
+        model.ship.addObserver(this);
 
         // want the background to be grey
         setBackground(Color.LIGHT_GRAY);
@@ -69,7 +70,6 @@ public class EditView extends JPanel implements Observer {
             @Override
             public void mouseClicked(MouseEvent e) {
               if(e.getClickCount() == 2){
-                  System.out.println(e.getX());
                   int potential_x = e.getX() - (int)(model.getPadSize().x/2);
                   int potential_y = e.getY() - (int)(model.getPadSize().y/2);
                   int old_x = (int)model.getPadCoord().x;
@@ -132,12 +132,10 @@ public class EditView extends JPanel implements Observer {
                 }else{
                   pad_stopDragging.x = -1;
                   pad_stopDragging.y = -1;
-                  System.out.println("Not a pad drag");
                 }
               }else{
                 pad_stopDragging.x = -1;
                 pad_stopDragging.y = -1;
-                System.out.println("Not a pad drag");
               }
 
               //peaks
@@ -154,7 +152,6 @@ public class EditView extends JPanel implements Observer {
               }else{
                 peak_stopDragging.x = -1;
                 peak_stopDragging.y = -1;
-                System.out.println("Not a peak drag");
               }
 
               model.setChangedAndNotify();
@@ -172,8 +169,6 @@ public class EditView extends JPanel implements Observer {
                 if(!model.outside_the_world(potential_x, potential_y, (int)model.landing_pad_size.x, (int)model.landing_pad_size.y)){
                   model.setLandingPadCoord(potential_x, potential_y);
                   model.setChangedAndNotify();
-                }else{
-                  System.out.println("boom!");
                 }
               }
 

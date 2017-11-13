@@ -8,6 +8,7 @@ import java.util.Observable;
 
 class Ship extends Observable {
     GameModel model;
+
     // FPS and initial position for ship to appear
     public Ship(GameModel model, int fps, int x, int y) {
         this.model = model;
@@ -131,7 +132,13 @@ class Ship extends Observable {
         position.add(velocity);
         //update the ship Rectangle2D
         model.setShipRect((position.x - 10/2), (position.y - 10/2), 10, 10);
-        model.crash_or_not();
+        //make sure i am not crash on terrain or outside the world
+        model.crash_or_lost();
+        //make sure if i have landed on the pad or crashed due to fast speed
+        model.land_on_pad();
+
+        //set changed and notify
+        setChangedAndNotify();
     }
 
     // methods to control the ship

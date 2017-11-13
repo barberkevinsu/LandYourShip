@@ -14,6 +14,7 @@ public class MessageView extends JPanel implements Observer {
     public MessageView(GameModel model) {
         this.model = model;
         model.addObserver(this);
+        model.ship.addObserver(this);
 
         // want the background to be black
         setBackground(Color.BLACK);
@@ -37,16 +38,26 @@ public class MessageView extends JPanel implements Observer {
 
     @Override
     public void update(Observable o, Object arg) {
-      int fuel_val = (int)model.ship.getFuel();
       //set fuel
+      int fuel_val = (int)model.ship.getFuel();
       fuel.setText("Fuel:" + Integer.toString(fuel_val));
       if(fuel_val < 10){
           fuel.setForeground (Color.red);
       }
       //set speed
-      speed.setText("Speed:" + Integer.toString((int)model.ship.getSpeed()));
+      double speed_val = model.ship.getSpeed();
+      speed.setText("Speed:" + Double.toString(speed_val));
+      if(speed_val < model.getSafeLandingSpeed()){
+        speed.setForeground (Color.green);
+      }else{
+        speed.setForeground (Color.white);
+      }
 
-      if(model.ship.isPaused()){
+      if(model.landed){
+        message.setText("LANDED!");
+      }else if(model.crashed){
+        message.setText("CRASH");
+      }else if(model.ship.isPaused()){
         message.setText("(paused)");
       }else{
         message.setText("");

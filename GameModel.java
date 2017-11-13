@@ -30,6 +30,10 @@ public class GameModel extends Observable {
     int ship_width;
     int ship_height;
 
+    //store if it needs reset
+    boolean landed = false;
+    boolean crashed = false;
+
 
     public GameModel(int fps, int width, int height, int peaks) {
 
@@ -84,6 +88,22 @@ public class GameModel extends Observable {
         });
     }
 
+    public void land_on_pad() {
+      double cur_speed = this.ship.getSpeed();
+      Rectangle2D my_pad_rect = new Rectangle2D.Double(landing_pad_coord.x, landing_pad_coord.y, landing_pad_size.x, landing_pad_size.y);
+      if(my_pad_rect.intersects(ship_rect)){
+        if(cur_speed < getSafeLandingSpeed()){
+          System.out.println("safe landed");
+          landed = true;
+          this.ship.setPaused(true);
+        }else{
+          System.out.println("too fast: crash");
+          crashed = true;
+          this.ship.setPaused(true);
+        }
+      }
+    }
+    //called by playview keyPressed
     public void move_my_ship(char e){
       switch (e) {
         case 'w':
@@ -107,6 +127,13 @@ public class GameModel extends Observable {
           break;
 
         case ' ':
+          if(landed || crashed){
+            this.ship.setPaused(true);
+            landed = false;
+            crashed = false;
+            this.ship.reset(new Point2d(350, 50));
+            break;
+          }
           if(this.ship.isPaused()){
             this.ship.setPaused(false);
           }else{
@@ -116,23 +143,26 @@ public class GameModel extends Observable {
 
         default:
           Point2d pos = this.ship.getPosition();
-          System.out.println("ship is in: " + pos.x + ", " + pos.y);
           break;
       }
     }
 
     //detect crash
-    public void crash_or_not() {
-      if(this.terrain_poly.intersects(this.ship_rect)){
-        System.out.println("zhuang le");
-      }else{
-        System.out.println("");
+    public void crash_or_lost() {
+      if(this.terrain_poly.intersects(this.ship_rect) || !worldBounds.contains(this.ship_rect)){
+        this.ship.setPaused(true);
+        crashed = true;
       }
     }
 
     // World
     public final Rectangle2D getWorldBounds() {
         return worldBounds;
+    }
+
+    // get safe speed
+    public double getSafeLandingSpeed() {
+      return this.ship.getSafeLandingSpeed();
     }
 
     // get landing pad coordinates
