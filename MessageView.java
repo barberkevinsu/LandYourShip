@@ -5,17 +5,24 @@ import java.util.Observer;
 
 public class MessageView extends JPanel implements Observer {
 
+    GameModel model;
     // status messages for game
-    JLabel fuel = new JLabel("fuel");
-    JLabel speed = new JLabel("speed");
-    JLabel message = new JLabel("message");
+    JLabel fuel = new JLabel("Fuel");
+    JLabel speed = new JLabel("Speed");
+    JLabel message = new JLabel("Message");
 
     public MessageView(GameModel model) {
+        this.model = model;
+        model.addObserver(this);
 
         // want the background to be black
         setBackground(Color.BLACK);
 
         setLayout(new FlowLayout(FlowLayout.LEFT));
+        //Integer.toString(quantity)
+        fuel.setText("Fuel:" + Integer.toString((int)model.ship.getFuel()));
+        speed.setText("Speed:" + Integer.toString((int)model.ship.getSpeed()));
+        message.setText("(paused)");
 
         add(fuel);
         add(speed);
@@ -30,6 +37,19 @@ public class MessageView extends JPanel implements Observer {
 
     @Override
     public void update(Observable o, Object arg) {
+      int fuel_val = (int)model.ship.getFuel();
+      //set fuel
+      fuel.setText("Fuel:" + Integer.toString(fuel_val));
+      if(fuel_val < 10){
+          fuel.setForeground (Color.red);
+      }
+      //set speed
+      speed.setText("Speed:" + Integer.toString((int)model.ship.getSpeed()));
 
+      if(model.ship.isPaused()){
+        message.setText("(paused)");
+      }else{
+        message.setText("");
+      }
     }
 }

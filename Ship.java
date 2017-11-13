@@ -7,9 +7,10 @@ import java.awt.geom.Rectangle2D;
 import java.util.Observable;
 
 class Ship extends Observable {
-
+    GameModel model;
     // FPS and initial position for ship to appear
-    public Ship(int fps, int x, int y) {
+    public Ship(GameModel model, int fps, int x, int y) {
+        this.model = model;
 
         startPosition = new Point2d(x, y);
 
@@ -128,6 +129,9 @@ class Ship extends Observable {
 
         // finally update the position
         position.add(velocity);
+        //update the ship Rectangle2D
+        model.setShipRect((position.x - 10/2), (position.y - 10/2), 10, 10);
+        model.crash_or_not();
     }
 
     // methods to control the ship

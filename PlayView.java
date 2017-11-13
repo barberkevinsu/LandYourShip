@@ -67,40 +67,7 @@ public class PlayView extends JPanel implements Observer {
 
             @Override
             public void keyPressed(KeyEvent e) {
-              switch (e.getKeyChar()) {
-                case 'w':
-                  model.ship.thrustUp();
-                  model.ship.setChangedAndNotify();
-                  break;
-
-                case 'a':
-                  model.ship.thrustLeft();
-                  model.ship.setChangedAndNotify();
-                  break;
-
-                case 's':
-                  model.ship.thrustDown();
-                  model.ship.setChangedAndNotify();
-                  break;
-
-                case 'd':
-                  model.ship.thrustRight();
-                  model.ship.setChangedAndNotify();
-                  break;
-
-                case ' ':
-                  if(model.ship.isPaused()){
-                    model.ship.setPaused(false);
-                  }else{
-                    model.ship.setPaused(true);
-                  }//note: setPaused will setChangedAndNotify
-                  break;
-
-                default:
-                  Point2d pos = model.ship.getPosition();
-                  System.out.println("ship is in: " + pos.x + ", " + pos.y);
-                  break;
-              }
+              model.move_my_ship(e.getKeyChar());
             }
         });
         // needs to be focusable for keylistener

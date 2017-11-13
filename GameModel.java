@@ -18,11 +18,14 @@ public class GameModel extends Observable {
     int peaks;
     int[] peak_xPoints;
     int[] peak_yPoints;
+    Polygon terrain_poly;
     //my undo manager
     private UndoManager undoManager;
 
     // Ship
     public Ship ship;
+    Rectangle2D ship_rect;//bounded with Ship, used to detect if intersect with polygon
+
     //ship size
     int ship_width;
     int ship_height;
@@ -30,10 +33,11 @@ public class GameModel extends Observable {
 
     public GameModel(int fps, int width, int height, int peaks) {
 
-        ship = new Ship(60, width/2, 50);
-
+        ship = new Ship(this, 60, width/2, 50);
         ship_width = 10;
         ship_height = 10;
+        this.ship_rect = new Rectangle2D.Double();
+        this.ship_rect.setRect(width - ship_width/2, height - ship_height/2, ship_width, ship_height);
 
         worldBounds = new Rectangle2D.Double(0, 0, width, height);
 
@@ -69,7 +73,7 @@ public class GameModel extends Observable {
         }
         peak_xPoints[peaks + 1] = (int)worldBounds.getWidth();
         peak_yPoints[peaks + 1] = (int)worldBounds.getHeight();
-
+        terrain_poly = new Polygon(peak_xPoints, peak_yPoints, peaks+2);
 
         // anonymous class to monitor ship updates
         ship.addObserver(new Observer() {
@@ -78,6 +82,52 @@ public class GameModel extends Observable {
                 setChangedAndNotify();
             }
         });
+    }
+
+    public void move_my_ship(char e){
+      switch (e) {
+        case 'w':
+          this.ship.thrustUp();
+          this.ship.setChangedAndNotify();
+          break;
+
+        case 'a':
+          this.ship.thrustLeft();
+          this.ship.setChangedAndNotify();
+          break;
+
+        case 's':
+          this.ship.thrustDown();
+          this.ship.setChangedAndNotify();
+          break;
+
+        case 'd':
+          this.ship.thrustRight();
+          this.ship.setChangedAndNotify();
+          break;
+
+        case ' ':
+          if(this.ship.isPaused()){
+            this.ship.setPaused(false);
+          }else{
+            this.ship.setPaused(true);
+          }//note: setPaused will setChangedAndNotify
+          break;
+
+        default:
+          Point2d pos = this.ship.getPosition();
+          System.out.println("ship is in: " + pos.x + ", " + pos.y);
+          break;
+      }
+    }
+
+    //detect crash
+    public void crash_or_not() {
+      if(this.terrain_poly.intersects(this.ship_rect)){
+        System.out.println("zhuang le");
+      }else{
+        System.out.println("");
+      }
     }
 
     // World
@@ -124,6 +174,10 @@ public class GameModel extends Observable {
         return false;
       }
     }
+    //set ship Rectangle2D
+    public void setShipRect(double x, double y, double w, double h){
+      this.ship_rect.setRect(x, y, w, h);
+    }
 
     //set the landing pad's coordinate in model
     //just for easy access when game playing
@@ -135,6 +189,12 @@ public class GameModel extends Observable {
     //set peak y value function
     public void setPeakValue(int i, int y){
       this.peak_yPoints[i] = y;
+      updateTerrainPoly();
+    }
+
+    public void updateTerrainPoly(){
+      this.terrain_poly.reset();
+      this.terrain_poly = new Polygon(peak_xPoints, peak_yPoints, peaks+2);
     }
 
     //hittest for landding pad
