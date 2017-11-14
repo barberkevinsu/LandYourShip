@@ -99,6 +99,7 @@ class Ship extends Observable {
         return fuel;
     }
     public void setFuel(int fuel) { this.fuel = fuel; }
+    public void addFuel(int fuel) { this.fuel += fuel; }
     double fuel;
 
     // movement dynamics
@@ -136,6 +137,8 @@ class Ship extends Observable {
         model.crash_or_lost();
         //make sure if i have landed on the pad or crashed due to fast speed
         model.land_on_pad();
+        //enhanced: make sure if i have eaten a fuel tank
+        model.eat_fuel_tak();
 
         //set changed and notify
         setChangedAndNotify();

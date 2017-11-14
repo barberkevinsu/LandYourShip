@@ -43,6 +43,8 @@ public class MessageView extends JPanel implements Observer {
       fuel.setText("Fuel:" + Integer.toString(fuel_val));
       if(fuel_val < 10){
           fuel.setForeground (Color.red);
+      }else{
+        fuel.setForeground (Color.WHITE);
       }
       //set speed
       double speed_val = model.ship.getSpeed();

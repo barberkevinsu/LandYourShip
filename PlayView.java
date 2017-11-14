@@ -6,6 +6,7 @@ import java.util.Observer;
 import javax.vecmath.*;
 import java.lang.Math;
 import java.awt.event.KeyEvent;
+import java.awt.geom.Rectangle2D;
 import java.awt.event.KeyListener;
 
 
@@ -50,6 +51,13 @@ public class PlayView extends JPanel implements Observer {
         g.setColor(Color.RED);
         g.drawRect((int)landing_pad_coord.x, (int)landing_pad_coord.y, (int)landing_pad_size.x, (int)landing_pad_size.y);
         g.fillRect((int)landing_pad_coord.x, (int)landing_pad_coord.y, (int)landing_pad_size.x, (int)landing_pad_size.y);
+
+        //enhanced: draw fuel tank
+        g.setColor(Color.BLACK);
+        for(int i=0; i<model.fuel_tank.size(); i++){
+          Rectangle2D temp = model.fuel_tank.get(i);
+          g.fillRect((int)temp.getX(), (int)temp.getY(), (int)temp.getWidth(), (int)temp.getHeight());
+        }
     }
 
     public PlayView(GameModel model) {

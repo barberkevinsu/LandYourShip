@@ -34,6 +34,9 @@ public class GameModel extends Observable {
     boolean landed = false;
     boolean crashed = false;
 
+    //enhanced: number from 1 to 5 randomly, position ramdomly but in the upper part when initialized
+    ArrayList <Rectangle2D> fuel_tank;
+
 
     public GameModel(int fps, int width, int height, int peaks) {
 
@@ -56,6 +59,8 @@ public class GameModel extends Observable {
         landing_pad_size.x = 40;
         landing_pad_size.y = 10;
 
+        //enhanced: set up fuel tank
+        setUpFuelTank();
 
 
         //randomly set peaks
@@ -86,6 +91,24 @@ public class GameModel extends Observable {
                 setChangedAndNotify();
             }
         });
+    }
+
+    //enhanced: set up random number fuel tank
+    public void setUpFuelTank(){
+      //enhanced: set up fuel tank
+      fuel_tank = new ArrayList <Rectangle2D>();
+      Random rand_n = new Random();
+      Random rand_x = new Random();
+      Random rand_y = new Random();
+      int tank_num = rand_n.nextInt((5 - 1) + 1) + 1;
+      for(int i=0; i<tank_num; i++){
+        //we don't want the tank to be outside_the_world
+        //we want all the tanks to be initialized in the upper world
+        int x_val = rand_x.nextInt((700-5 - 0) + 1) + 0;
+        int y_val = rand_y.nextInt((100-5 - 0) + 1) + 0;
+        Rectangle2D a_tank = new Rectangle2D.Double(x_val, y_val, 5, 5);
+        fuel_tank.add(a_tank);
+      }
     }
 
     public void land_on_pad() {
@@ -131,6 +154,7 @@ public class GameModel extends Observable {
             this.ship.setPaused(true);
             landed = false;
             crashed = false;
+            this.setUpFuelTank();
             this.ship.reset(new Point2d(350, 50));
             break;
           }
@@ -152,6 +176,20 @@ public class GameModel extends Observable {
       if(this.terrain_poly.intersects(this.ship_rect) || !worldBounds.contains(this.ship_rect)){
         this.ship.setPaused(true);
         crashed = true;
+      }
+    }
+
+    //enhanced: detect if I have eaten a fuel tank
+    public void eat_fuel_tak(){
+      for(int i=0; i<fuel_tank.size(); i++){
+        if(fuel_tank.get(i).intersects(this.ship_rect)){
+          Random rand_fuel = new Random();
+          //random fuel from 1 to 10
+          int tank_num = rand_fuel.nextInt((10 - 1) + 1) + 1;
+          this.ship.addFuel(tank_num);
+          fuel_tank.remove(i);
+          break;
+        }
       }
     }
 
